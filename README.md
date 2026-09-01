@@ -1,56 +1,175 @@
-# Welcome to your Expo app 👋
+# 📱 Finance App Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicativo mobile de gerenciamento financeiro pessoal desenvolvido com **React Native**, **Expo** e **TypeScript**.
 
-## Get started
+O **Finance App Mobile** é a versão mobile do projeto Finance App, criado com o objetivo de ajudar usuários a organizar suas finanças de forma simples, moderna e intuitiva.
 
-1. Install dependencies
+> **Organize hoje. Conquiste amanhã.**
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## 🚀 Sobre o projeto
 
-   ```bash
-   npx expo start
-   ```
+O Finance App Mobile está sendo desenvolvido para permitir que usuários acompanhem e organizem sua vida financeira diretamente pelo celular.
 
-In the output, you'll find options to open the app in a
+O projeto também faz parte da evolução do Finance App para uma aplicação multiplataforma, utilizando uma arquitetura com frontend mobile e API backend.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+Atualmente o aplicativo está em desenvolvimento.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## 🛠️ Tecnologias
 
-When you're ready, run:
+O projeto utiliza:
 
-```bash
-npm run reset-project
+- React Native
+- Expo
+- TypeScript
+- Expo Router
+- Node.js
+- Express
+- MySQL
+- JWT
+
+---
+
+## 📂 Estrutura do projeto
+
+```text
+Finance-App-Mobile/
+│
+├── assets/
+├── src/
+│   ├── app/
+│   │   ├── _layout.tsx
+│   │   ├── explore.tsx
+│   │   └── index.tsx
+│   │
+│   ├── components/
+│   ├── constants/
+│   └── hooks/
+│
+├── app.json
+├── package.json
+├── tsconfig.json
+└── README.md
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-### Other setup steps
+## 📱 Funcionalidades planejadas
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+- 🔐 Login e autenticação
+- 👤 Cadastro de usuários
+- 📊 Dashboard financeiro
+- 💰 Controle de receitas
+- 💸 Controle de despesas
+- 💳 Gerenciamento de transações
+- 🎯 Metas financeiras
+- 👤 Perfil do usuário
+- 🔑 Recuperação de senha
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## 🔐 Autenticação
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+A aplicação será integrada à API do Finance App para autenticação dos usuários.
 
-## Join the community
+A arquitetura utiliza **JWT (JSON Web Token)** para autenticação e proteção das rotas privadas.
 
-Join our community of developers creating universal apps.
+---
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 🔗 Arquitetura
+
+```text
+Finance App Mobile
+        │
+        │ HTTP / API
+        ▼
+Node.js + Express
+        │
+        ▼
+      MySQL
+```
+
+O aplicativo mobile será responsável pela interface e experiência do usuário, enquanto o backend será responsável pelas regras de negócio, autenticação e comunicação com o banco de dados.
+
+---
+
+## ▶️ Executando o projeto
+
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/caioluanmatos/Finance-App-Mobile.git
+```
+
+### 2. Entre na pasta
+
+```bash
+cd Finance-App-Mobile
+```
+
+### 3. Instale as dependências
+
+```bash
+npm install
+```
+
+### 4. Inicie o Expo
+
+```bash
+npx expo start
+```
+
+Para executar utilizando um emulador Android:
+
+```text
+Pressione "a" no terminal do Expo
+```
+
+---
+
+## 📌 Status
+
+🚧 **Em desenvolvimento**
+
+Primeira etapa:
+
+- [x] Configuração do React Native
+- [x] Configuração do Expo
+- [x] Configuração do TypeScript
+- [x] Configuração do Android Emulator
+- [x] Estrutura inicial do projeto
+- [x] Primeira interface de Login
+- [ ] Finalizar interface de Login
+- [ ] Criar tela de Cadastro
+- [ ] Configurar navegação
+- [ ] Integrar autenticação com a API
+- [ ] Criar Dashboard
+- [ ] Criar gerenciamento de transações
+- [ ] Criar receitas e despesas
+- [ ] Criar metas financeiras
+- [ ] Criar perfil do usuário
+
+---
+
+## 💻 Versão Web
+
+O Finance App também possui uma versão Web desenvolvida com React.
+
+O objetivo é manter as versões **Web e Mobile conectadas à mesma API**, permitindo que os dados financeiros do usuário sejam acessados em diferentes plataformas.
+
+---
+
+## 👨‍💻 Autor
+
+Desenvolvido por **Caio Luan Matos**
+
+GitHub: **@caioluanmatos**
+
+---
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT.
