@@ -40,5 +40,18 @@
     "web": "expo start --web",
     "lint": "expo lint"
   },
-  "private": true
+  "private": true,
+  "description": "Aplicativo mobile de gerenciamento financeiro pessoal desenvolvido com **React Native**, **Expo** e **TypeScript**.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/caioluanmatos/Finance-App-Mobile.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/caioluanmatos/Finance-App-Mobile/issues"
+  },
+  "homepage": "https://github.com/caioluanmatos/Finance-App-Mobile#readme"
 }
