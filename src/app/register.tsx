@@ -1,14 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from 'expo-router';
+import { router } from "expo-router";
 import { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -20,10 +21,29 @@ export default function RegisterScreen() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
   function handleRegister() {
-    console.log("Nome:", nome);
-    console.log("Email:", email);
-    console.log("Senha:", senha);
-    console.log("Confirmar senha:", confirmarSenha);
+    if (!nome.trim() || !email.trim() || !senha || !confirmarSenha) {
+      Alert.alert("Atenção", "Preencha todos os campos.");
+      return;
+    }
+
+    const emailValido = /\S+@\S+\.\S+/.test(email);
+
+      if(!emailValido) {
+        Alert.alert("Atenção", "Digite um e-mail válido.");
+        return;
+      }
+
+
+
+    if (senha !== confirmarSenha) {
+      Alert.alert("Atenção", "As senhas não coincidem.");
+      return;
+    }
+    if (senha.length < 6) {
+      Alert.alert("Atenção", "A senha precisa ter pelo menos 6 caracteres.");
+      return;
+    }
+    Alert.alert("Sucesso", "Cadastro validado!");
   }
 
   return (
@@ -113,9 +133,7 @@ export default function RegisterScreen() {
             <Text style={styles.loginText}>Já possui uma conta?</Text>
 
             <Pressable onPress={() => router.back()}>
-            <Text style={styles.loginLink}>
-                 {' '}Entrar
-            </Text>
+              <Text style={styles.loginLink}> Entrar</Text>
             </Pressable>
           </View>
         </View>
