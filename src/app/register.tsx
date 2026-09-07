@@ -20,31 +20,63 @@ export default function RegisterScreen() {
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
-  function handleRegister() {
-    if (!nome.trim() || !email.trim() || !senha || !confirmarSenha) {
-      Alert.alert("Atenção", "Preencha todos os campos.");
-      return;
-    }
-
-    const emailValido = /\S+@\S+\.\S+/.test(email);
-
-      if(!emailValido) {
-        Alert.alert("Atenção", "Digite um e-mail válido.");
-        return;
-      }
-
-
-
-    if (senha !== confirmarSenha) {
-      Alert.alert("Atenção", "As senhas não coincidem.");
-      return;
-    }
-    if (senha.length < 6) {
-      Alert.alert("Atenção", "A senha precisa ter pelo menos 6 caracteres.");
-      return;
-    }
-    Alert.alert("Sucesso", "Cadastro validado!");
+ async function handleRegister() {
+  if (!nome.trim() || !email.trim() || !senha || !confirmarSenha) {
+    Alert.alert("Atenção", "Preencha todos os campos.");
+    return;
   }
+
+  const emailValido = /\S+@\S+\.\S+/.test(email);
+
+  if (!emailValido) {
+    Alert.alert("Atenção", "Digite um e-mail válido.");
+    return;
+  }
+
+  if (senha !== confirmarSenha) {
+    Alert.alert("Atenção", "As senhas não coincidem.");
+    return;
+  }
+
+  if (senha.length < 6) {
+    Alert.alert(
+      "Atenção",
+      "A senha precisa ter pelo menos 6 caracteres."
+    );
+    return;
+  }
+
+  try {
+    const response = await fetch("http://10.0.2.2:3000/cadastro", {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify({
+        nome,
+        email,
+        senha,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      Alert.alert("Erro", data.mensagem || "Erro ao criar conta.");
+      return;
+    }
+
+    Alert.alert(
+      "Sucesso",
+      data.mensagem || "Conta criada com sucesso!"
+    );
+  } catch (error) {
+    console.log("Erro no cadastro:", error);
+    Alert.alert("Erro", "Não foi possível conectar ao servidor.");
+  }
+}
 
   return (
     <SafeAreaView style={styles.container}>
