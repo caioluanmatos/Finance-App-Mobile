@@ -1,3 +1,4 @@
+import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import { useState } from "react";
@@ -18,7 +19,7 @@ export default function LoginScreen() {
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
- async function handleLogin() {
+async function handleLogin() {
   if (!email.trim() || !senha) {
     Alert.alert("Atenção", "Informe e-mail e senha.");
     return;
@@ -46,13 +47,17 @@ export default function LoginScreen() {
       return;
     }
 
-    console.log("Token:", data.token);
+    await SecureStore.setItemAsync("token", data.token);
+    const tokenSalvo = await SecureStore.getItemAsync("token");
+
     console.log("Usuário:", data.usuario);
+    console.log("Token foi salvo?", !!tokenSalvo);
 
     Alert.alert(
       "Sucesso",
       data.mensagem || "Login realizado com sucesso!"
     );
+
   } catch (error) {
     console.log("Erro no login:", error);
 
@@ -62,6 +67,7 @@ export default function LoginScreen() {
     );
   }
 }
+
 
   return (
     <SafeAreaView style={styles.container}>
