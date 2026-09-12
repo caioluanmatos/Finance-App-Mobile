@@ -1,6 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
-import { Link } from "expo-router";
+import { Link,router } from "expo-router";
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -50,8 +50,8 @@ async function handleLogin() {
     await SecureStore.setItemAsync("token", data.token);
     const tokenSalvo = await SecureStore.getItemAsync("token");
 
-    console.log("Usuário:", data.usuario);
-    console.log("Token foi salvo?", !!tokenSalvo);
+
+    router.replace("/dashboard");
 
     Alert.alert(
       "Sucesso",
