@@ -11,16 +11,57 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Alert } from "react-native";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
-  function handleLogin() {
-    console.log("Email:", email);
-    console.log("Senha:", senha);
+ async function handleLogin() {
+  if (!email.trim() || !senha) {
+    Alert.alert("Atenção", "Informe e-mail e senha.");
+    return;
   }
+
+  try {
+    const response = await fetch("http://10.0.2.2:3000/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        senha,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      Alert.alert(
+        "Erro",
+        data.mensagem || "Não foi possível fazer login."
+      );
+      return;
+    }
+
+    console.log("Token:", data.token);
+    console.log("Usuário:", data.usuario);
+
+    Alert.alert(
+      "Sucesso",
+      data.mensagem || "Login realizado com sucesso!"
+    );
+  } catch (error) {
+    console.log("Erro no login:", error);
+
+    Alert.alert(
+      "Erro",
+      "Não foi possível conectar ao servidor."
+    );
+  }
+}
 
   return (
     <SafeAreaView style={styles.container}>
