@@ -1,8 +1,10 @@
-import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
-import { Link,router } from "expo-router";
+import { Link, router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
+
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,63 +13,66 @@ import {
   TextInput,
   View,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Alert } from "react-native";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
-async function handleLogin() {
-  if (!email.trim() || !senha) {
-    Alert.alert("Atenção", "Informe e-mail e senha.");
-    return;
-  }
+  async function handleLogin() {
+    const emailFormatado = email.trim();
 
-  try {
-    const response = await fetch("http://10.0.2.2:3000/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        senha,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      Alert.alert(
-        "Erro",
-        data.mensagem || "Não foi possível fazer login."
-      );
+    if (!emailFormatado || !senha) {
+      Alert.alert("Atenção", "Informe e-mail e senha.");
       return;
     }
 
-    await SecureStore.setItemAsync("token", data.token);
-    const tokenSalvo = await SecureStore.getItemAsync("token");
+    try {
+      const response = await fetch("http://10.0.2.2:3000/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: emailFormatado,
+          senha,
+        }),
+      });
 
+      const data = await response.json();
 
-    router.replace("/dashboard");
+      if (!response.ok) {
+        Alert.alert(
+          "Erro",
+          data.mensagem || "Não foi possível fazer login."
+        );
+        return;
+      }
 
-    Alert.alert(
-      "Sucesso",
-      data.mensagem || "Login realizado com sucesso!"
-    );
+      if (!data.token) {
+        Alert.alert("Erro", "O servidor não retornou um token.");
+        return;
+      }
 
-  } catch (error) {
-    console.log("Erro no login:", error);
+      await SecureStore.setItemAsync("token", data.token);
 
-    Alert.alert(
-      "Erro",
-      "Não foi possível conectar ao servidor."
-    );
+      Alert.alert(
+        "Sucesso",
+        data.mensagem || "Login realizado com sucesso!"
+      );
+
+      router.replace("/dashboard");
+    } catch (error) {
+      console.log("Erro no login:", error);
+
+      Alert.alert(
+        "Erro",
+        "Não foi possível conectar ao servidor."
+      );
+    }
   }
-}
-
 
   return (
     <SafeAreaView style={styles.container}>
@@ -79,11 +84,15 @@ async function handleLogin() {
           <View style={styles.header}>
             <Text style={styles.logo}>Finance App</Text>
 
-            <Text style={styles.slogan}>Organize hoje. Conquiste amanhã.</Text>
+            <Text style={styles.slogan}>
+              Organize hoje. Conquiste amanhã.
+            </Text>
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.title}>Bem-vindo de volta</Text>
+            <Text style={styles.title}>
+              Bem-vindo de volta
+            </Text>
 
             <Text style={styles.subtitle}>
               Entre na sua conta para continuar
@@ -93,7 +102,11 @@ async function handleLogin() {
               <Text style={styles.label}>E-mail</Text>
 
               <View style={styles.inputContainer}>
-                <Ionicons name="mail-outline" size={20} color="#8b8b9b" />
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color="#8b8b9b"
+                />
 
                 <TextInput
                   style={styles.input}
@@ -101,6 +114,7 @@ async function handleLogin() {
                   placeholderTextColor="#8b8b9b"
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoCorrect={false}
                   value={email}
                   onChangeText={setEmail}
                 />
@@ -126,9 +140,17 @@ async function handleLogin() {
                   onChangeText={setSenha}
                 />
 
-                <Pressable onPress={() => setMostrarSenha(!mostrarSenha)}>
+                <Pressable
+                  onPress={() =>
+                    setMostrarSenha((valorAtual) => !valorAtual)
+                  }
+                >
                   <Ionicons
-                    name={mostrarSenha ? "eye-off-outline" : "eye-outline"}
+                    name={
+                      mostrarSenha
+                        ? "eye-off-outline"
+                        : "eye-outline"
+                    }
                     size={21}
                     color="#8b8b9b"
                   />
@@ -137,7 +159,9 @@ async function handleLogin() {
             </View>
 
             <Pressable>
-              <Text style={styles.forgotPassword}>Esqueci minha senha</Text>
+              <Text style={styles.forgotPassword}>
+                Esqueci minha senha
+              </Text>
             </Pressable>
 
             <Pressable
@@ -147,16 +171,22 @@ async function handleLogin() {
               ]}
               onPress={handleLogin}
             >
-              <Text style={styles.loginButtonText}>Entrar</Text>
+              <Text style={styles.loginButtonText}>
+                Entrar
+              </Text>
             </Pressable>
 
             <View style={styles.registerContainer}>
               <Text style={styles.registerText}>
                 Ainda não possui uma conta?
               </Text>
+
               <Link href="/register" asChild>
                 <Pressable>
-                  <Text style={styles.registerLink}> Criar conta</Text>
+                  <Text style={styles.registerLink}>
+                    {" "}
+                    Criar conta
+                  </Text>
                 </Pressable>
               </Link>
             </View>
