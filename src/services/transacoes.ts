@@ -98,3 +98,41 @@ export async function excluirTransacao(id: number | string): Promise<{
     status: res.status,
   };
 }
+
+
+/**
+ * Edita uma transação existente (PUT /transacoes/:id).
+ */
+export async function editarTransacao(
+  id: number | string,
+  dados: CriarTransacaoDTO
+): Promise<{
+  sucesso: boolean;
+  mensagem?: string;
+  status: number;
+}> {
+  const payload = {
+    descricao: dados.descricao.trim(),
+    valor: Number(dados.valor),
+    tipo: dados.tipo,
+    data: dados.data,
+  };
+
+  const res = await apiFetch<any>(
+    `/transacoes/${id}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }
+  );
+
+  return {
+    sucesso: res.ok,
+    mensagem:
+      res.mensagem ||
+      (res.ok
+        ? "Transação editada com sucesso!"
+        : "Não foi possível editar a transação."),
+    status: res.status,
+  };
+}

@@ -1,6 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import React, { useState } from "react";
+import {
+  router,
+  useLocalSearchParams,
+} from "expo-router";
+
+import React, {
+  useEffect,
+  useState,
+} from "react";
+
 import {
   ActivityIndicator,
   Alert,
@@ -13,143 +21,508 @@ import {
   TextInput,
   View,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { criarTransacao } from "@/services/transacoes";
-import { TipoTransacao } from "@/types/transacao";
-import { obterDataAtualISO } from "@/utils/formatters";
+import {
+  criarTransacao,
+  editarTransacao,
+} from "@/services/transacoes";
+
+import {
+  TipoTransacao,
+} from "@/types/transacao";
+
+import {
+  obterDataAtualISO,
+} from "@/utils/formatters";
 
 export default function NovaTransacaoScreen() {
-  const [tipo, setTipo] = useState<TipoTransacao>("despesa");
-  const [descricao, setDescricao] = useState("");
-  const [valor, setValor] = useState("");
-  const [data, setData] = useState(obterDataAtualISO());
-  const [categoria, setCategoria] = useState("");
-  const [salvando, setSalvando] = useState(false);
+  // ==============================
+  // PARÂMETROS DA ROTA
+  // ==============================
+
+  const params =
+    useLocalSearchParams<{
+      id?: string;
+      descricao?: string;
+      valor?: string;
+      tipo?: string;
+      data?: string;
+      categoria?: string;
+    }>();
+
+  const editando =
+    Boolean(params.id);
+
+  // ==============================
+  // ESTADOS
+  // ==============================
+
+  const [tipo, setTipo] =
+    useState<TipoTransacao>(
+      "despesa"
+    );
+
+  const [
+    descricao,
+    setDescricao,
+  ] = useState("");
+
+  const [valor, setValor] =
+    useState("");
+
+  const [data, setData] =
+    useState(
+      obterDataAtualISO()
+    );
+
+  const [
+    categoria,
+    setCategoria,
+  ] = useState("");
+
+  const [
+    salvando,
+    setSalvando,
+  ] = useState(false);
+
+  // ==============================
+  // PREENCHER DADOS NA EDIÇÃO
+  // ==============================
+
+  useEffect(() => {
+    if (!editando) {
+      return;
+    }
+
+    if (params.descricao) {
+      setDescricao(
+        params.descricao
+      );
+    }
+
+    if (params.valor) {
+      setValor(
+        String(params.valor)
+      );
+    }
+
+    if (
+      params.tipo === "receita" ||
+      params.tipo === "despesa"
+    ) {
+      setTipo(params.tipo);
+    }
+
+    if (params.data) {
+      // Alguns bancos/APIs podem devolver:
+      // 2026-10-07T03:00:00.000Z
+      // O input usa apenas AAAA-MM-DD.
+      setData(
+        String(
+          params.data
+        ).slice(0, 10)
+      );
+    }
+
+    if (params.categoria) {
+      setCategoria(
+        params.categoria
+      );
+    }
+  }, [
+    editando,
+    params.id,
+    params.descricao,
+    params.valor,
+    params.tipo,
+    params.data,
+    params.categoria,
+  ]);
+
+  // ==============================
+  // SALVAR
+  // ==============================
 
   async function handleSalvar() {
-    if (salvando) return;
+    if (salvando) {
+      return;
+    }
+
+    // DESCRIÇÃO
 
     if (!descricao.trim()) {
-      Alert.alert("Atenção", "Informe a descrição da transação.");
+      Alert.alert(
+        "Atenção",
+        "Informe a descrição da transação."
+      );
+
       return;
     }
 
-    // Trata vírgula e ponto para converter para número
-    const valorTratado = valor.replace(/\s/g, "").replace(",", ".");
-    const valorNumerico = parseFloat(valorTratado);
+    // VALOR
 
-    if (isNaN(valorNumerico) || valorNumerico <= 0) {
-      Alert.alert("Atenção", "Informe um valor numérico válido maior que zero.");
+    const valorTratado =
+      valor
+        .replace(/\s/g, "")
+        .replace(",", ".");
+
+    const valorNumerico =
+      parseFloat(
+        valorTratado
+      );
+
+    if (
+      isNaN(valorNumerico) ||
+      valorNumerico <= 0
+    ) {
+      Alert.alert(
+        "Atenção",
+        "Informe um valor numérico válido maior que zero."
+      );
+
       return;
     }
 
-    const dataFinal = data.trim() || obterDataAtualISO();
+    // DATA
+
+    const dataFinal =
+      data.trim() ||
+      obterDataAtualISO();
 
     setSalvando(true);
 
     try {
-      const resultado = await criarTransacao({
-        descricao: descricao.trim(),
-        valor: valorNumerico,
-        tipo,
-        data: dataFinal,
-        categoria: categoria.trim() ? categoria.trim() : undefined,
-      });
+      // ==========================
+      // EDITAR
+      // ==========================
 
-      if (resultado.sucesso) {
-        Alert.alert("Sucesso", resultado.mensagem || "Transação cadastrada com sucesso!", [
-          {
-            text: "OK",
-            onPress: () => {
-              router.back();
-            },
-          },
-        ]);
-      } else {
-        if (resultado.status === 401 || resultado.status === 403) {
-          Alert.alert("Sessão Expirada", "Faça login novamente.", [
-            { text: "OK", onPress: () => router.replace("/") },
-          ]);
-        } else {
-          Alert.alert("Erro", resultado.mensagem || "Não foi possível cadastrar a transação.");
+      if (
+        editando &&
+        params.id
+      ) {
+        const resultado =
+          await editarTransacao(
+            params.id,
+            {
+              descricao:
+                descricao.trim(),
+
+              valor:
+                valorNumerico,
+
+              tipo,
+
+              data:
+                dataFinal,
+
+              categoria:
+                categoria.trim()
+                  ? categoria.trim()
+                  : undefined,
+            }
+          );
+
+        if (
+          resultado.sucesso
+        ) {
+          Alert.alert(
+            "Sucesso",
+            resultado.mensagem ||
+              "Transação editada com sucesso!",
+            [
+              {
+                text: "OK",
+
+                onPress: () => {
+                  router.back();
+                },
+              },
+            ]
+          );
+
+          return;
         }
+
+        if (
+          resultado.status ===
+            401 ||
+          resultado.status ===
+            403
+        ) {
+          Alert.alert(
+            "Sessão Expirada",
+            "Faça login novamente.",
+            [
+              {
+                text: "OK",
+
+                onPress: () =>
+                  router.replace(
+                    "/"
+                  ),
+              },
+            ]
+          );
+
+          return;
+        }
+
+        Alert.alert(
+          "Erro",
+          resultado.mensagem ||
+            "Não foi possível editar a transação."
+        );
+
+        return;
       }
+
+      // ==========================
+      // CRIAR
+      // ==========================
+
+      const resultado =
+        await criarTransacao({
+          descricao:
+            descricao.trim(),
+
+          valor:
+            valorNumerico,
+
+          tipo,
+
+          data:
+            dataFinal,
+
+          categoria:
+            categoria.trim()
+              ? categoria.trim()
+              : undefined,
+        });
+
+      if (
+        resultado.sucesso
+      ) {
+        Alert.alert(
+          "Sucesso",
+          resultado.mensagem ||
+            "Transação cadastrada com sucesso!",
+          [
+            {
+              text: "OK",
+
+              onPress: () => {
+                router.back();
+              },
+            },
+          ]
+        );
+
+        return;
+      }
+
+      if (
+        resultado.status ===
+          401 ||
+        resultado.status ===
+          403
+      ) {
+        Alert.alert(
+          "Sessão Expirada",
+          "Faça login novamente.",
+          [
+            {
+              text: "OK",
+
+              onPress: () =>
+                router.replace(
+                  "/"
+                ),
+            },
+          ]
+        );
+
+        return;
+      }
+
+      Alert.alert(
+        "Erro",
+        resultado.mensagem ||
+          "Não foi possível cadastrar a transação."
+      );
     } catch {
-      Alert.alert("Erro", "Ocorreu um erro inesperado ao salvar a transação.");
+      Alert.alert(
+        "Erro",
+        editando
+          ? "Ocorreu um erro inesperado ao editar a transação."
+          : "Ocorreu um erro inesperado ao salvar a transação."
+      );
     } finally {
       setSalvando(false);
     }
   }
 
+  // ==============================
+  // TELA
+  // ==============================
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+    >
       <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={
+          styles.keyboardView
+        }
+        behavior={
+          Platform.OS === "ios"
+            ? "padding"
+            : undefined
+        }
       >
         {/* HEADER */}
-        <View style={styles.header}>
+
+        <View
+          style={styles.header}
+        >
           <Pressable
-            style={({ pressed }) => [
+            style={({
+              pressed,
+            }) => [
               styles.iconButton,
-              pressed && styles.buttonPressed,
+
+              pressed &&
+                styles.buttonPressed,
             ]}
-            onPress={() => router.back()}
+            onPress={() =>
+              router.back()
+            }
           >
-            <Ionicons name="arrow-back" size={22} color="#ffffff" />
+            <Ionicons
+              name="arrow-back"
+              size={22}
+              color="#ffffff"
+            />
           </Pressable>
 
-          <Text style={styles.headerTitle}>Nova Transação</Text>
+          <Text
+            style={
+              styles.headerTitle
+            }
+          >
+            {editando
+              ? "Editar Transação"
+              : "Nova Transação"}
+          </Text>
 
-          <View style={styles.placeholder} />
+          <View
+            style={
+              styles.placeholder
+            }
+          />
         </View>
 
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={
+            styles.scrollContent
+          }
+          showsVerticalScrollIndicator={
+            false
+          }
+          keyboardShouldPersistTaps="handled"
         >
-          {/* SELETOR DE TIPO (RECEITA / DESPESA) */}
-          <Text style={styles.sectionLabel}>Tipo de Transação</Text>
-          <View style={styles.tipoContainer}>
+          {/* TIPO */}
+
+          <Text
+            style={
+              styles.sectionLabel
+            }
+          >
+            Tipo de Transação
+          </Text>
+
+          <View
+            style={
+              styles.tipoContainer
+            }
+          >
+            {/* RECEITA */}
+
             <Pressable
               style={[
                 styles.tipoButton,
-                tipo === "receita" && styles.tipoButtonReceitaAtivo,
+
+                tipo ===
+                  "receita" &&
+                  styles.tipoButtonReceitaAtivo,
               ]}
-              onPress={() => setTipo("receita")}
+              disabled={salvando}
+              onPress={() =>
+                setTipo(
+                  "receita"
+                )
+              }
             >
               <Ionicons
                 name="arrow-up-circle"
                 size={22}
-                color={tipo === "receita" ? "#4ade80" : "#8b8b9b"}
+                color={
+                  tipo ===
+                  "receita"
+                    ? "#4ade80"
+                    : "#8b8b9b"
+                }
               />
+
               <Text
                 style={[
                   styles.tipoButtonText,
-                  tipo === "receita" && styles.tipoButtonTextReceita,
+
+                  tipo ===
+                    "receita" &&
+                    styles.tipoButtonTextReceita,
                 ]}
               >
                 Receita
               </Text>
             </Pressable>
 
+            {/* DESPESA */}
+
             <Pressable
               style={[
                 styles.tipoButton,
-                tipo === "despesa" && styles.tipoButtonDespesaAtivo,
+
+                tipo ===
+                  "despesa" &&
+                  styles.tipoButtonDespesaAtivo,
               ]}
-              onPress={() => setTipo("despesa")}
+              disabled={salvando}
+              onPress={() =>
+                setTipo(
+                  "despesa"
+                )
+              }
             >
               <Ionicons
                 name="arrow-down-circle"
                 size={22}
-                color={tipo === "despesa" ? "#f87171" : "#8b8b9b"}
+                color={
+                  tipo ===
+                  "despesa"
+                    ? "#f87171"
+                    : "#8b8b9b"
+                }
               />
+
               <Text
                 style={[
                   styles.tipoButtonText,
-                  tipo === "despesa" && styles.tipoButtonTextDespesa,
+
+                  tipo ===
+                    "despesa" &&
+                    styles.tipoButtonTextDespesa,
                 ]}
               >
                 Despesa
@@ -157,90 +530,237 @@ export default function NovaTransacaoScreen() {
             </Pressable>
           </View>
 
-          {/* CARD DE FORMULÁRIO */}
-          <View style={styles.formCard}>
+          {/* FORMULÁRIO */}
+
+          <View
+            style={
+              styles.formCard
+            }
+          >
             {/* DESCRIÇÃO */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Descrição *</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="document-text-outline" size={20} color="#8b8b9b" />
+
+            <View
+              style={
+                styles.inputGroup
+              }
+            >
+              <Text
+                style={styles.label}
+              >
+                Descrição *
+              </Text>
+
+              <View
+                style={
+                  styles.inputContainer
+                }
+              >
+                <Ionicons
+                  name="document-text-outline"
+                  size={20}
+                  color="#8b8b9b"
+                />
+
                 <TextInput
-                  style={styles.input}
+                  style={
+                    styles.input
+                  }
                   placeholder="Ex: Salário, Mercado, Aluguel"
                   placeholderTextColor="#8b8b9b"
-                  value={descricao}
-                  onChangeText={setDescricao}
-                  editable={!salvando}
+                  value={
+                    descricao
+                  }
+                  onChangeText={
+                    setDescricao
+                  }
+                  editable={
+                    !salvando
+                  }
                 />
               </View>
             </View>
 
             {/* VALOR */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Valor (R$) *</Text>
-              <View style={styles.inputContainer}>
-                <Text style={styles.prefixoMoeda}>R$</Text>
+
+            <View
+              style={
+                styles.inputGroup
+              }
+            >
+              <Text
+                style={styles.label}
+              >
+                Valor (R$) *
+              </Text>
+
+              <View
+                style={
+                  styles.inputContainer
+                }
+              >
+                <Text
+                  style={
+                    styles.prefixoMoeda
+                  }
+                >
+                  R$
+                </Text>
+
                 <TextInput
-                  style={styles.input}
+                  style={
+                    styles.input
+                  }
                   placeholder="0,00"
                   placeholderTextColor="#8b8b9b"
                   keyboardType="decimal-pad"
                   value={valor}
-                  onChangeText={setValor}
-                  editable={!salvando}
+                  onChangeText={
+                    setValor
+                  }
+                  editable={
+                    !salvando
+                  }
                 />
               </View>
             </View>
 
             {/* DATA */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Data (AAAA-MM-DD)</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="calendar-outline" size={20} color="#8b8b9b" />
+
+            <View
+              style={
+                styles.inputGroup
+              }
+            >
+              <Text
+                style={styles.label}
+              >
+                Data
+                (AAAA-MM-DD) *
+              </Text>
+
+              <View
+                style={
+                  styles.inputContainer
+                }
+              >
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color="#8b8b9b"
+                />
+
                 <TextInput
-                  style={styles.input}
+                  style={
+                    styles.input
+                  }
                   placeholder="AAAA-MM-DD"
                   placeholderTextColor="#8b8b9b"
                   value={data}
-                  onChangeText={setData}
-                  editable={!salvando}
+                  onChangeText={
+                    setData
+                  }
+                  editable={
+                    !salvando
+                  }
+                  autoCapitalize="none"
                 />
               </View>
             </View>
 
             {/* CATEGORIA */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Categoria (opcional)</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="pricetag-outline" size={20} color="#8b8b9b" />
+
+            <View
+              style={
+                styles.inputGroup
+              }
+            >
+              <Text
+                style={styles.label}
+              >
+                Categoria
+                (opcional)
+              </Text>
+
+              <View
+                style={
+                  styles.inputContainer
+                }
+              >
+                <Ionicons
+                  name="pricetag-outline"
+                  size={20}
+                  color="#8b8b9b"
+                />
+
                 <TextInput
-                  style={styles.input}
+                  style={
+                    styles.input
+                  }
                   placeholder="Ex: Alimentação, Moradia, Transporte"
                   placeholderTextColor="#8b8b9b"
-                  value={categoria}
-                  onChangeText={setCategoria}
-                  editable={!salvando}
+                  value={
+                    categoria
+                  }
+                  onChangeText={
+                    setCategoria
+                  }
+                  editable={
+                    !salvando
+                  }
                 />
               </View>
             </View>
 
-            {/* BOTÃO SALVAR */}
+            {/* BOTÃO */}
+
             <Pressable
-              style={({ pressed }) => [
+              style={({
+                pressed,
+              }) => [
                 styles.salvarButton,
-                pressed && styles.buttonPressed,
-                salvando && styles.salvarButtonDisabled,
+
+                pressed &&
+                  styles.buttonPressed,
+
+                salvando &&
+                  styles.salvarButtonDisabled,
               ]}
               disabled={salvando}
-              onPress={handleSalvar}
+              onPress={
+                handleSalvar
+              }
             >
               {salvando ? (
-                <View style={styles.loadingRow}>
-                  <ActivityIndicator size="small" color="#ffffff" />
-                  <Text style={styles.salvarButtonText}>Salvando...</Text>
+                <View
+                  style={
+                    styles.loadingRow
+                  }
+                >
+                  <ActivityIndicator
+                    size="small"
+                    color="#ffffff"
+                  />
+
+                  <Text
+                    style={
+                      styles.salvarButtonText
+                    }
+                  >
+                    {editando
+                      ? "Salvando alterações..."
+                      : "Salvando..."}
+                  </Text>
                 </View>
               ) : (
-                <Text style={styles.salvarButtonText}>Salvar Transação</Text>
+                <Text
+                  style={
+                    styles.salvarButtonText
+                  }
+                >
+                  {editando
+                    ? "Salvar Alterações"
+                    : "Salvar Transação"}
+                </Text>
               )}
             </Pressable>
           </View>
@@ -250,171 +770,188 @@ export default function NovaTransacaoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#080b18",
-  },
+// ==============================
+// ESTILOS
+// ==============================
 
-  keyboardView: {
-    flex: 1,
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor:
+        "#080b18",
+    },
 
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-  },
+    keyboardView: {
+      flex: 1,
+    },
 
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#1a1e32",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#292f4d",
-  },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent:
+        "space-between",
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      paddingBottom: 16,
+    },
 
-  headerTitle: {
-    color: "#ffffff",
-    fontSize: 20,
-    fontWeight: "700",
-  },
+    iconButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor:
+        "#1a1e32",
+      alignItems: "center",
+      justifyContent:
+        "center",
+      borderWidth: 1,
+      borderColor: "#292f4d",
+    },
 
-  placeholder: {
-    width: 44,
-  },
+    headerTitle: {
+      color: "#ffffff",
+      fontSize: 20,
+      fontWeight: "700",
+    },
 
-  buttonPressed: {
-    opacity: 0.8,
-  },
+    placeholder: {
+      width: 44,
+    },
 
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
+    buttonPressed: {
+      opacity: 0.8,
+    },
 
-  sectionLabel: {
-    color: "#d8daea",
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 10,
-    marginTop: 8,
-  },
+    scrollContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 40,
+    },
 
-  tipoContainer: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 20,
-  },
+    sectionLabel: {
+      color: "#d8daea",
+      fontSize: 14,
+      fontWeight: "600",
+      marginBottom: 10,
+      marginTop: 8,
+    },
 
-  tipoButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: "#111528",
-    borderWidth: 1,
-    borderColor: "#232945",
-  },
+    tipoContainer: {
+      flexDirection: "row",
+      gap: 12,
+      marginBottom: 20,
+    },
 
-  tipoButtonReceitaAtivo: {
-    backgroundColor: "#133827",
-    borderColor: "#4ade80",
-  },
+    tipoButton: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent:
+        "center",
+      gap: 8,
+      height: 52,
+      borderRadius: 14,
+      backgroundColor:
+        "#111528",
+      borderWidth: 1,
+      borderColor: "#232945",
+    },
 
-  tipoButtonDespesaAtivo: {
-    backgroundColor: "#3b1d24",
-    borderColor: "#f87171",
-  },
+    tipoButtonReceitaAtivo: {
+      backgroundColor:
+        "#133827",
+      borderColor: "#4ade80",
+    },
 
-  tipoButtonText: {
-    color: "#9ea3b7",
-    fontSize: 15,
-    fontWeight: "700",
-  },
+    tipoButtonDespesaAtivo: {
+      backgroundColor:
+        "#3b1d24",
+      borderColor: "#f87171",
+    },
 
-  tipoButtonTextReceita: {
-    color: "#4ade80",
-  },
+    tipoButtonText: {
+      color: "#9ea3b7",
+      fontSize: 15,
+      fontWeight: "700",
+    },
 
-  tipoButtonTextDespesa: {
-    color: "#f87171",
-  },
+    tipoButtonTextReceita: {
+      color: "#4ade80",
+    },
 
-  formCard: {
-    backgroundColor: "#111528",
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "#232945",
-  },
+    tipoButtonTextDespesa: {
+      color: "#f87171",
+    },
 
-  inputGroup: {
-    marginBottom: 18,
-  },
+    formCard: {
+      backgroundColor:
+        "#111528",
+      borderRadius: 20,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: "#232945",
+    },
 
-  label: {
-    color: "#d8daea",
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
+    inputGroup: {
+      marginBottom: 18,
+    },
 
-  inputContainer: {
-    height: 52,
-    backgroundColor: "#0b0e1d",
-    borderWidth: 1,
-    borderColor: "#292f4d",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
+    label: {
+      color: "#d8daea",
+      fontSize: 13,
+      fontWeight: "600",
+      marginBottom: 8,
+    },
 
-  prefixoMoeda: {
-    color: "#8b8b9b",
-    fontSize: 15,
-    fontWeight: "700",
-  },
+    inputContainer: {
+      height: 52,
+      backgroundColor:
+        "#0b0e1d",
+      borderWidth: 1,
+      borderColor: "#292f4d",
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
 
-  input: {
-    flex: 1,
-    color: "#ffffff",
-    fontSize: 15,
-  },
+    prefixoMoeda: {
+      color: "#8b8b9b",
+      fontSize: 15,
+      fontWeight: "700",
+    },
 
-  salvarButton: {
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: "#6c5ce7",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
-  },
+    input: {
+      flex: 1,
+      color: "#ffffff",
+      fontSize: 15,
+    },
 
-  salvarButtonDisabled: {
-    opacity: 0.6,
-  },
+    salvarButton: {
+      height: 52,
+      borderRadius: 14,
+      backgroundColor:
+        "#6c5ce7",
+      alignItems: "center",
+      justifyContent:
+        "center",
+      marginTop: 10,
+    },
 
-  salvarButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
+    salvarButtonDisabled: {
+      opacity: 0.6,
+    },
 
-  loadingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-});
+    salvarButtonText: {
+      color: "#ffffff",
+      fontSize: 16,
+      fontWeight: "700",
+    },
+
+    loadingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+  });
