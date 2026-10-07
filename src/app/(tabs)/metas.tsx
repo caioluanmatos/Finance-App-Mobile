@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import React, { useCallback, useState } from "react";
+
 import {
   ActivityIndicator,
   Alert,
@@ -11,25 +12,41 @@ import {
   TextInput,
   View,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   criarMeta,
+  editarMeta,
   excluirMeta,
   listarMetas,
   Meta,
 } from "@/services/metas";
+
 import { formatarMoeda } from "@/utils/formatters";
 
 export default function MetasScreen() {
+  // =========================
+  // ESTADOS
+  // =========================
+
   const [metas, setMetas] = useState<Meta[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+
+  const [mostrarFormulario, setMostrarFormulario] =
+    useState(false);
+
+  const [metaEditando, setMetaEditando] =
+    useState<Meta | null>(null);
 
   const [nome, setNome] = useState("");
   const [valorMeta, setValorMeta] = useState("");
   const [valorAtual, setValorAtual] = useState("");
-  const [salvando, setSalvando] = useState(false);
+
+  // =========================
+  // CARREGAR METAS
+  // =========================
 
   const carregarMetas = async () => {
     setCarregando(true);
@@ -41,7 +58,8 @@ export default function MetasScreen() {
     } else {
       Alert.alert(
         "Erro",
-        resposta.mensagem || "Não foi possível carregar suas metas."
+        resposta.mensagem ||
+          "Não foi possível carregar suas metas."
       );
     }
 
@@ -54,66 +72,175 @@ export default function MetasScreen() {
     }, [])
   );
 
-  const handleCriarMeta = async () => {
-    if (!nome.trim() || !valorMeta.trim()) {
+  // =========================
+  // LIMPAR FORMULÁRIO
+  // =========================
+
+  const limparFormulario = () => {
+    setNome("");
+    setValorMeta("");
+    setValorAtual("");
+    setMetaEditando(null);
+  };
+
+  // =========================
+  // BOTÃO +
+  // =========================
+
+  const abrirNovaMeta = () => {
+    limparFormulario();
+    setMostrarFormulario(true);
+  };
+
+  const fecharFormulario = () => {
+    limparFormulario();
+    setMostrarFormulario(false);
+  };
+
+  // =========================
+  // BOTÃO EDITAR
+  // =========================
+
+  const iniciarEdicao = (meta: Meta) => {
+    // IMPORTANTE:
+    // aqui guardamos o objeto inteiro da meta.
+    setMetaEditando(meta);
+
+    // Preenchemos o formulário.
+    setNome(meta.nome);
+    setValorMeta(String(meta.valor_meta));
+    setValorAtual(String(meta.valor_atual));
+
+    // Abrimos o formulário.
+    setMostrarFormulario(true);
+  };
+
+  // =========================
+  // VALIDAR FORMULÁRIO
+  // =========================
+
+  const obterDadosFormulario = () => {
+    if (!nome.trim()) {
       Alert.alert(
         "Atenção",
-        "Informe o nome e o valor da meta."
+        "Informe o nome da meta."
       );
-      return;
+
+      return null;
     }
 
-    const meta = Number(
+    if (!valorMeta.trim()) {
+      Alert.alert(
+        "Atenção",
+        "Informe o valor da meta."
+      );
+
+      return null;
+    }
+
+    const objetivo = Number(
       valorMeta.replace(",", ".")
     );
 
-    const atual = valorAtual
+    const atual = valorAtual.trim()
       ? Number(valorAtual.replace(",", "."))
       : 0;
 
-    if (Number.isNaN(meta) || meta <= 0) {
+    if (
+      Number.isNaN(objetivo) ||
+      objetivo <= 0
+    ) {
       Alert.alert(
         "Atenção",
         "Informe um valor de meta válido."
       );
-      return;
+
+      return null;
     }
 
-    if (Number.isNaN(atual) || atual < 0) {
+    if (
+      Number.isNaN(atual) ||
+      atual < 0
+    ) {
       Alert.alert(
         "Atenção",
         "Informe um valor atual válido."
       );
+
+      return null;
+    }
+
+    return {
+      nome: nome.trim(),
+      valor_meta: objetivo,
+      valor_atual: atual,
+    };
+  };
+
+  // =========================
+  // CRIAR OU EDITAR
+  // =========================
+
+  const handleSalvarMeta = async () => {
+    if (salvando) {
+      return;
+    }
+
+    const dados = obterDadosFormulario();
+
+    if (!dados) {
       return;
     }
 
     setSalvando(true);
 
-    const resposta = await criarMeta({
-      nome: nome.trim(),
-      valor_meta: meta,
-      valor_atual: atual,
-    });
+    /*
+      Se metaEditando tiver uma meta:
+      PUT /metas/:id
+
+      Se metaEditando for null:
+      POST /metas
+    */
+
+    const estavaEditando = metaEditando !== null;
+
+    const resposta = metaEditando
+      ? await editarMeta(
+          metaEditando.id,
+          dados
+        )
+      : await criarMeta(dados);
 
     setSalvando(false);
 
     if (!resposta.ok) {
       Alert.alert(
         "Erro",
-        resposta.mensagem || "Não foi possível criar a meta."
+        resposta.mensagem ||
+          (estavaEditando
+            ? "Não foi possível atualizar a meta."
+            : "Não foi possível criar a meta.")
       );
+
       return;
     }
 
-    setNome("");
-    setValorMeta("");
-    setValorAtual("");
+    limparFormulario();
     setMostrarFormulario(false);
 
     await carregarMetas();
 
-    Alert.alert("Sucesso", "Meta criada com sucesso!");
+    Alert.alert(
+      "Sucesso",
+      estavaEditando
+        ? "Meta atualizada com sucesso!"
+        : "Meta criada com sucesso!"
+    );
   };
+
+  // =========================
+  // EXCLUIR META
+  // =========================
 
   const handleExcluirMeta = (meta: Meta) => {
     Alert.alert(
@@ -124,11 +251,14 @@ export default function MetasScreen() {
           text: "Cancelar",
           style: "cancel",
         },
+
         {
           text: "Excluir",
           style: "destructive",
+
           onPress: async () => {
-            const resposta = await excluirMeta(meta.id);
+            const resposta =
+              await excluirMeta(meta.id);
 
             if (!resposta.ok) {
               Alert.alert(
@@ -136,7 +266,17 @@ export default function MetasScreen() {
                 resposta.mensagem ||
                   "Não foi possível excluir a meta."
               );
+
               return;
+            }
+
+            // Se estava editando a mesma meta
+            // que acabou de excluir:
+            if (
+              metaEditando?.id === meta.id
+            ) {
+              limparFormulario();
+              setMostrarFormulario(false);
             }
 
             await carregarMetas();
@@ -146,20 +286,45 @@ export default function MetasScreen() {
     );
   };
 
-  const calcularProgresso = (meta: Meta) => {
-    const objetivo = Number(meta.valor_meta);
-    const atual = Number(meta.valor_atual);
+  // =========================
+  // PROGRESSO
+  // =========================
+
+  const calcularProgresso = (
+    meta: Meta
+  ) => {
+    const objetivo = Number(
+      meta.valor_meta
+    );
+
+    const atual = Number(
+      meta.valor_atual
+    );
 
     if (objetivo <= 0) {
       return 0;
     }
 
-    return Math.min(atual / objetivo, 1);
+    return Math.min(
+      atual / objetivo,
+      1
+    );
   };
 
-  const renderMeta = ({ item }: { item: Meta }) => {
-    const progresso = calcularProgresso(item);
-    const porcentagem = Math.round(progresso * 100);
+  // =========================
+  // CARD
+  // =========================
+
+  const renderMeta = ({
+    item,
+  }: {
+    item: Meta;
+  }) => {
+    const progresso =
+      calcularProgresso(item);
+
+    const porcentagem =
+      Math.round(progresso * 100);
 
     return (
       <View style={styles.card}>
@@ -172,39 +337,90 @@ export default function MetasScreen() {
             />
           </View>
 
-          <View style={styles.cardTitleContainer}>
+          <View
+            style={
+              styles.cardTitleContainer
+            }
+          >
             <Text style={styles.metaNome}>
               {item.nome}
             </Text>
 
-            <Text style={styles.porcentagem}>
+            <Text
+              style={styles.porcentagem}
+            >
               {porcentagem}% concluído
             </Text>
           </View>
 
-          <Pressable
-            style={styles.deleteButton}
-            onPress={() => handleExcluirMeta(item)}
+          <View
+            style={styles.cardActions}
           >
-            <Ionicons
-              name="trash-outline"
-              size={20}
-              color="#ff6b6b"
-            />
-          </Pressable>
+            {/* EDITAR */}
+
+            <Pressable
+              style={styles.editButton}
+              onPress={() =>
+                iniciarEdicao(item)
+              }
+            >
+              <Ionicons
+                name="create-outline"
+                size={20}
+                color="#8b7cff"
+              />
+            </Pressable>
+
+            {/* EXCLUIR */}
+
+            <Pressable
+              style={
+                styles.deleteButton
+              }
+              onPress={() =>
+                handleExcluirMeta(item)
+              }
+            >
+              <Ionicons
+                name="trash-outline"
+                size={20}
+                color="#ff6b6b"
+              />
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.valores}>
-          <Text style={styles.valorAtual}>
-            {formatarMoeda(Number(item.valor_atual))}
+          <Text
+            style={styles.valorAtual}
+          >
+            {formatarMoeda(
+              Number(
+                item.valor_atual
+              )
+            )}
           </Text>
 
-          <Text style={styles.valorObjetivo}>
-            de {formatarMoeda(Number(item.valor_meta))}
+          <Text
+            style={
+              styles.valorObjetivo
+            }
+          >
+            {" "}
+            de{" "}
+            {formatarMoeda(
+              Number(
+                item.valor_meta
+              )
+            )}
           </Text>
         </View>
 
-        <View style={styles.progressBackground}>
+        <View
+          style={
+            styles.progressBackground
+          }
+        >
           <View
             style={[
               styles.progressBar,
@@ -218,34 +434,60 @@ export default function MetasScreen() {
     );
   };
 
+  // =========================
+  // TELA
+  // =========================
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+    >
+      {/* HEADER */}
+
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Metas</Text>
-          <Text style={styles.subtitle}>
-            Acompanhe seus objetivos financeiros
+          <Text style={styles.title}>
+            Metas
+          </Text>
+
+          <Text
+            style={styles.subtitle}
+          >
+            Acompanhe seus objetivos
+            financeiros
           </Text>
         </View>
 
         <Pressable
           style={styles.addButton}
-          onPress={() =>
-            setMostrarFormulario(!mostrarFormulario)
+          onPress={
+            mostrarFormulario
+              ? fecharFormulario
+              : abrirNovaMeta
           }
         >
           <Ionicons
-            name={mostrarFormulario ? "close" : "add"}
+            name={
+              mostrarFormulario
+                ? "close"
+                : "add"
+            }
             size={26}
             color="#ffffff"
           />
         </Pressable>
       </View>
 
+      {/* FORMULÁRIO */}
+
       {mostrarFormulario && (
         <View style={styles.form}>
-          <Text style={styles.formTitle}>
-            Nova meta
+          <Text
+            style={styles.formTitle}
+          >
+            {metaEditando
+              ? "Editar meta"
+              : "Nova meta"}
           </Text>
 
           <TextInput
@@ -277,21 +519,32 @@ export default function MetasScreen() {
           <Pressable
             style={[
               styles.salvarButton,
-              salvando && styles.disabledButton,
+              salvando &&
+                styles.disabledButton,
             ]}
-            onPress={handleCriarMeta}
+            onPress={handleSalvarMeta}
             disabled={salvando}
           >
             {salvando ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator
+                color="#ffffff"
+              />
             ) : (
-              <Text style={styles.salvarText}>
-                Criar meta
+              <Text
+                style={
+                  styles.salvarText
+                }
+              >
+                {metaEditando
+                  ? "Salvar alterações"
+                  : "Criar meta"}
               </Text>
             )}
           </Pressable>
         </View>
       )}
+
+      {/* CARREGAMENTO / LISTA */}
 
       {carregando ? (
         <View style={styles.loading}>
@@ -300,33 +553,55 @@ export default function MetasScreen() {
             color="#8b7cff"
           />
 
-          <Text style={styles.loadingText}>
+          <Text
+            style={
+              styles.loadingText
+            }
+          >
             Carregando metas...
           </Text>
         </View>
       ) : (
         <FlatList
           data={metas}
-          keyExtractor={(item) => String(item.id)}
+          keyExtractor={(item) =>
+            String(item.id)
+          }
           renderItem={renderMeta}
-          contentContainerStyle={styles.lista}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={
+            styles.lista
+          }
+          showsVerticalScrollIndicator={
+            false
+          }
           refreshing={carregando}
           onRefresh={carregarMetas}
           ListEmptyComponent={
-            <View style={styles.empty}>
+            <View
+              style={styles.empty}
+            >
               <Ionicons
                 name="flag-outline"
                 size={48}
                 color="#62677c"
               />
 
-              <Text style={styles.emptyTitle}>
+              <Text
+                style={
+                  styles.emptyTitle
+                }
+              >
                 Nenhuma meta ainda
               </Text>
 
-              <Text style={styles.emptyText}>
-                Toque no + para criar sua primeira meta financeira.
+              <Text
+                style={
+                  styles.emptyText
+                }
+              >
+                Toque no + para criar
+                sua primeira meta
+                financeira.
               </Text>
             </View>
           }
@@ -335,6 +610,10 @@ export default function MetasScreen() {
     </SafeAreaView>
   );
 }
+
+// =========================
+// ESTILOS
+// =========================
 
 const styles = StyleSheet.create({
   container: {
@@ -345,7 +624,8 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
     marginTop: 10,
     marginBottom: 20,
@@ -456,6 +736,16 @@ const styles = StyleSheet.create({
     color: "#9ea3b7",
     fontSize: 13,
     marginTop: 3,
+  },
+
+  cardActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+
+  editButton: {
+    padding: 8,
   },
 
   deleteButton: {
