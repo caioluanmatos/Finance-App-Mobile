@@ -174,7 +174,7 @@ export default function DashboardScreen() {
               styles.acaoButtonSecundario,
               pressed && styles.buttonPressed,
             ]}
-            onPress={() => router.push("/transacoes")}
+            onPress={() => router.push("/(tabs)/transacoes")}
           >
             <Ionicons name="list" size={20} color="#6c5ce7" />
             <Text style={styles.acaoButtonTextSecundario}>Ver Transações</Text>
@@ -184,7 +184,7 @@ export default function DashboardScreen() {
         {/* SEÇÃO ÚLTIMAS TRANSAÇÕES */}
         <View style={styles.secaoHeader}>
           <Text style={styles.secaoTitulo}>Últimas Transações</Text>
-          <Pressable onPress={() => router.push("/transacoes")}>
+          <Pressable onPress={() => router.push("/(tabs)/transacoes")}>
             <Text style={styles.verTodasLink}>Ver todas</Text>
           </Pressable>
         </View>

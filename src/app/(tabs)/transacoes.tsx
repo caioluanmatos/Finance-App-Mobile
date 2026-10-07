@@ -101,7 +101,7 @@ export default function TransacoesScreen() {
             styles.iconButton,
             pressed && styles.buttonPressed,
           ]}
-          onPress={() => router.replace("/dashboard")}
+          onPress={() => router.replace("/(tabs)/dashboard")}
         >
           <Ionicons name="arrow-back" size={22} color="#ffffff" />
         </Pressable>

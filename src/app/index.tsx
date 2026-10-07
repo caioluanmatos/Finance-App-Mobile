@@ -63,7 +63,7 @@ export default function LoginScreen() {
         data.mensagem || "Login realizado com sucesso!"
       );
 
-      router.replace("/dashboard");
+      router.replace("/(tabs)/dashboard");
     } catch (error) {
       console.log("Erro no login:", error);
 
